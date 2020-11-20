@@ -79,8 +79,8 @@ public class DenseRange<T, D> implements Range<T, D> {
     }
 
     /**
-     * Apples to apples (dense to dense) : yields false if this.lower >
-     * other.upper or other.lower > this.upper Apples to oranges: (dense to
+     * Apples to apples (dense to dense) : yields false if this.lower {@literal >}
+     * other.upper or other.lower {@literal >} this.upper Apples to oranges: (dense to
      * nonDense) yields nonDense.overlaps(dense)
      *
      * @param other

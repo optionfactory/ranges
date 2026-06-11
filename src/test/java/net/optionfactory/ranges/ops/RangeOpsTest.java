@@ -1,8 +1,8 @@
 package net.optionfactory.ranges.ops;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 import net.optionfactory.ranges.DenseRange;
 import net.optionfactory.ranges.Range;
 import net.optionfactory.ranges.RangeMother;
@@ -88,7 +88,7 @@ public class RangeOpsTest {
     public void canMergeTwoContiguousNonOverlappingRanges() {
         final DenseRange<Integer, Long> a = (DenseRange<Integer, Long>) RangeMother.ranges.closed(1, 1);
         final DenseRange<Integer, Long> b = (DenseRange<Integer, Long>) RangeMother.ranges.closed(2, 2);
-        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b).stream());
+        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b));
         final Range<Integer, Long> expected = RangeMother.r(1, 2);
         Assertions.assertEquals(expected, got);
     }
@@ -97,7 +97,7 @@ public class RangeOpsTest {
     public void canMergeTwoOverlappingRanges() {
         final DenseRange<Integer, Long> a = (DenseRange<Integer, Long>) RangeMother.ranges.closed(1, 2);
         final DenseRange<Integer, Long> b = (DenseRange<Integer, Long>) RangeMother.ranges.closed(2, 3);
-        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b).stream());
+        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b));
         final Range<Integer, Long> expected = RangeMother.r(1, 3);
         Assertions.assertEquals(expected, got);
     }
@@ -106,7 +106,7 @@ public class RangeOpsTest {
     public void canMergeTwoOverlappingRangesWhenLatterIsSubset() {
         final DenseRange<Integer, Long> a = (DenseRange<Integer, Long>) RangeMother.ranges.closed(1, 2);
         final DenseRange<Integer, Long> b = (DenseRange<Integer, Long>) RangeMother.ranges.closed(2, 2);
-        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b).stream());
+        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b));
         final Range<Integer, Long> expected = RangeMother.r(1, 2);
         Assertions.assertEquals(expected, got);
     }
@@ -115,7 +115,7 @@ public class RangeOpsTest {
     public void canMergeTwoOverlappingRangesWhenFormerIsSubset() {
         final DenseRange<Integer, Long> a = (DenseRange<Integer, Long>) RangeMother.ranges.closed(1, 1);
         final DenseRange<Integer, Long> b = (DenseRange<Integer, Long>) RangeMother.ranges.closed(1, 2);
-        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b).stream());
+        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b));
         final Range<Integer, Long> expected = RangeMother.r(1, 2);
         Assertions.assertEquals(expected, got);
     }
@@ -125,7 +125,7 @@ public class RangeOpsTest {
         final Range<Integer, Long> a = RangeMother.ranges.closedOpen(0, Optional.of(0));
         final Range<Integer, Long> b = RangeMother.ranges.closedOpen(0, Optional.of(0));
         // We pass empty stream since they resolve directly to EmptyRange, preventing DenseRange casting
-        final Range<Integer, Long> got = ops.canonicalize(Stream.empty());
+        final Range<Integer, Long> got = ops.canonicalize(List.of());
         Assertions.assertEquals(Long.valueOf(0), got.size());
     }
 
@@ -133,7 +133,7 @@ public class RangeOpsTest {
     public void canMergeDifferentEmptyRanges() {
         final Range<Integer, Long> a = RangeMother.ranges.closedOpen(0, Optional.of(0));
         final Range<Integer, Long> b = RangeMother.ranges.closedOpen(1, Optional.of(1));
-        final Range<Integer, Long> got = ops.canonicalize(Stream.empty());
+        final Range<Integer, Long> got = ops.canonicalize(List.of());
         Assertions.assertEquals(Long.valueOf(0), got.size());
     }
 
@@ -141,7 +141,7 @@ public class RangeOpsTest {
     public void nonOverlappingRangesNonCountiguousRangesAreNotMerged() {
         final DenseRange<Integer, Long> a = (DenseRange<Integer, Long>) RangeMother.ranges.closed(1, 1);
         final DenseRange<Integer, Long> b = (DenseRange<Integer, Long>) RangeMother.ranges.closed(3, 3);
-        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b).stream());
+        final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(a, b));
         final SparseRange<Integer, Long> expected = new SparseRange<>(RangeMother.domain, Arrays.asList((DenseRange<Integer, Long>) RangeMother.r(1, 1), (DenseRange<Integer, Long>) RangeMother.r(3, 3)));
         Assertions.assertEquals(expected, got);
     }
@@ -150,14 +150,14 @@ public class RangeOpsTest {
     public void densifiesRangesOnCreation() {
         final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(
                 (DenseRange<Integer, Long>) RangeMother.ranges.closedOpen(0, Optional.of(5)),
-                (DenseRange<Integer, Long>) RangeMother.ranges.closedOpen(5, Optional.of(10))).stream()
+                (DenseRange<Integer, Long>) RangeMother.ranges.closedOpen(5, Optional.of(10)))
         );
         Assertions.assertEquals(RangeMother.ranges.closedOpen(0, Optional.of(10)), got);
     }
 
     @Test
     public void desnifyEmptyRangesIntoEmptyRange() {
-        final Range<Integer, Long> got = ops.canonicalize(Stream.empty());
+        final Range<Integer, Long> got = ops.canonicalize(List.of());
         Assertions.assertEquals(empty(), got);
     }
 }

@@ -1,9 +1,9 @@
 package net.optionfactory.ranges.ops;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
-import java.util.stream.Stream;
 import net.optionfactory.ranges.DenseRange;
 import net.optionfactory.ranges.EmptyRange;
 import net.optionfactory.ranges.Range;
@@ -22,23 +22,25 @@ public class RangeOps<T, D> {
         this.empty = new EmptyRange<>(domain);
     }
 
-    public Range<T, D> canonicalize(Stream<DenseRange<T, D>> wannaBeRange) {
-        final var nonEmptyRanges = wannaBeRange
-                .sorted()
-                .iterator();
-
-        if (!nonEmptyRanges.hasNext()) {
+    public Range<T, D> canonicalize(List<DenseRange<T, D>> rawRanges) {
+        if (rawRanges.isEmpty()) {
             return empty;
         }
-        final var densified = new ArrayList<DenseRange<T, D>>();
-        var current = nonEmptyRanges.next();
+        if (rawRanges.size() == 1) {
+            return rawRanges.get(0);
+        }
 
-        while (nonEmptyRanges.hasNext()) {
-            final DenseRange<T, D> next = nonEmptyRanges.next();
-            final boolean canBeMerged = endComparator.compare(current.end(), Optional.of(next.begin())) == 0 || current.overlaps(next);
-            if (canBeMerged) {
-                final Optional<T> max = BinaryOperator.maxBy(endComparator).apply(current.end(), next.end());
-                current = new DenseRange<>(domain, current.begin(), max);
+        rawRanges.sort((a, b) -> domain.compare(a.begin(), b.begin()));
+
+        final var densified = new ArrayList<DenseRange<T, D>>(rawRanges.size());
+        var current = rawRanges.get(0);
+
+        for (int i = 1; i < rawRanges.size(); i++) {
+            final DenseRange<T, D> next = rawRanges.get(i);
+
+            if (endComparator.compare(current.end(), Optional.of(next.begin())) >= 0) {
+                Optional<T> maxEnd = endComparator.compare(current.end(), next.end()) >= 0 ? current.end() : next.end();
+                current = new DenseRange<>(domain, current.begin(), maxEnd);
             } else {
                 densified.add(current);
                 current = next;
@@ -77,7 +79,7 @@ public class RangeOps<T, D> {
                 j++;
             }
         }
-        return canonicalize(intersection.stream());
+        return canonicalize(intersection);
     }
 
     public Range<T, D> difference(Range<T, D> lhs, Range<T, D> rhs) {
@@ -130,7 +132,7 @@ public class RangeOps<T, D> {
             }
         }
 
-        return canonicalize(difference.stream());
+        return canonicalize(difference);
     }
 
     public Range<T, D> union(Range<T, D> lhs, Range<T, D> rhs) {

@@ -106,19 +106,21 @@ public class Ranges<T, D> {
         }
 
         public Range<T, D> build() {
-            return ops.canonicalize(components.stream());
+            return ops.canonicalize(components);
         }
     }
 
     @SafeVarargs
     public final Range<T, D> canonicalize(DenseRange<T, D>... ranges) {
         Ensure.precondition(ranges != null, "cannot canonicalize a null array");
-        return ops.canonicalize(Arrays.stream(ranges));
+        return ops.canonicalize(new ArrayList<>(Arrays.asList(ranges)));
     }
 
     public Range<T, D> canonicalize(Iterable<DenseRange<T, D>> ranges) {
         Ensure.precondition(ranges != null, "cannot canonicalize a null iterable");
-        return ops.canonicalize(StreamSupport.stream(ranges.spliterator(), false));
+        final var list = new ArrayList<DenseRange<T, D>>();
+        ranges.forEach(list::add);
+        return ops.canonicalize(list);
     }
 
     private Range<T, D> resolve(Endpoint left, T lower, Optional<T> upper, Endpoint right) {

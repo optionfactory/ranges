@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.optionfactory</groupId>
     <artifactId>ranges</artifactId>
-    <version>2.0</version>
+    <version>2.1</version>
     <packaging>jar</packaging>
     <description>Dense and sparse ranges library</description>
 
@@ -48,7 +48,7 @@
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
         <maven.compiler.proc>none</maven.compiler.proc>
         <!-- added to make build reproducible https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
-        <project.build.outputTimestamp>2026-06-11T13:58:06Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-06-11T14:11:05Z</project.build.outputTimestamp>
     </properties>
     <dependencies>
         <dependency>

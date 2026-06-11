@@ -1,7 +1,7 @@
 package net.optionfactory.ranges;
 
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -12,26 +12,15 @@ import net.optionfactory.ranges.iterators.SparseRangeSpliterator;
 import net.optionfactory.ranges.ops.Ensure;
 import net.optionfactory.ranges.ops.RangeComparator;
 
-/**
- *
- * @param <T>
- * @author rferranti
- */
-public class SparseRange<T, D> implements Range<T, D> {
+public record SparseRange<T, D>(DiscreteDomain<T, D> domain, List<DenseRange<T, D>> densified) implements Range<T, D> {
 
-    private final DiscreteDomain<T, D> domain;
-    private final List<DenseRange<T, D>> densified;
-
-    public SparseRange(DiscreteDomain<T, D> domain, List<DenseRange<T, D>> densified) {
+    public SparseRange {
         Ensure.precondition(domain != null, "trying to create a SparseRange<T> with a null SequencingPolicy<T>");
-        Ensure.precondition(densified != null, "trying to create a SparseRange<T> from a null ranges");
+        Ensure.precondition(densified != null, "trying to create a SparseRange<T> from null ranges");
         Ensure.precondition(!densified.isEmpty(), "trying to create a SparseRange<T> from zero non-empty ranges");
         Ensure.precondition(densified.size() > 1, "trying to create a SparseRange<T> when a DenseRange<T> should be created");
-        // We are not checking isSorted(densified) && !any(densified, isOverlapping) as it's definitely not cheap.
-        // Using RangeOps.canonicalize (as any client code should not needing to mess with internals should) enforces SparseRange is 
-        // constructed as it should.
-        this.domain = domain;
-        this.densified = densified;
+
+        densified = Collections.unmodifiableList(densified);
     }
 
     @Override
@@ -57,27 +46,7 @@ public class SparseRange<T, D> implements Range<T, D> {
 
     @Override
     public Iterator<T> iterator() {
-        return densified.stream().flatMap(dr -> dr.stream()).iterator();
-    }
-
-    @Override
-    public boolean equals(Object rhs) {
-        if (rhs instanceof SparseRange == false) {
-            return false;
-        }
-        final SparseRange<T, D> other = (SparseRange<T, D>) rhs;
-        return this.densified.equals(other.densified);
-    }
-
-    @Override
-    public int hashCode() {
-        return densified.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        final String interposed = densified.stream().map(DenseRange::toString).collect(Collectors.joining(","));
-        return String.format("[%s]", interposed);
+        return densified.stream().flatMap(DenseRange::stream).iterator();
     }
 
     @Override
@@ -87,14 +56,11 @@ public class SparseRange<T, D> implements Range<T, D> {
     }
 
     @Override
-    public List<DenseRange<T, D>> densified() {
-        return densified;
-    }
-
-    @Override
     public Spliterator<T> spliterator() {
-        final LinkedList<Spliterator<T>> spliterators = densified.stream().map(DenseRange::spliterator).collect(Collectors.toCollection(() -> new LinkedList<>()));
-        return new SparseRangeSpliterator<>(domain, spliterators);
+        return new SparseRangeSpliterator<>(
+                domain,
+                densified.stream().map(DenseRange::spliterator).collect(Collectors.toCollection(java.util.LinkedList::new))
+        );
     }
 
     @Override
@@ -109,7 +75,7 @@ public class SparseRange<T, D> implements Range<T, D> {
 
     @Override
     public D size() {
-        return densified.stream().map(d -> d.size()).reduce(domain::sumDistances).get();
+        return densified.stream().map(DenseRange::size).reduce(domain::sumDistances).get();
     }
 
     @Override
@@ -117,4 +83,9 @@ public class SparseRange<T, D> implements Range<T, D> {
         return false;
     }
 
+    @Override
+    public String toString() {
+        final String interposed = densified.stream().map(DenseRange::toString).collect(Collectors.joining(","));
+        return String.format("[%s]", interposed);
+    }
 }

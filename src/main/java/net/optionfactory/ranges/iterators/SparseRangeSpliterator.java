@@ -27,7 +27,6 @@ public class SparseRangeSpliterator<T, D> implements Spliterator<T> {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -37,11 +36,9 @@ public class SparseRangeSpliterator<T, D> implements Spliterator<T> {
         if (size == 0) {
             return null;
         }
-
         if (size == 1) {
             return spliterators.getFirst().trySplit();
         }
-
         final int middle = spliterators.size() / 2;
 
         final List<Spliterator<T>> prefix = spliterators.subList(0, middle);
@@ -68,12 +65,11 @@ public class SparseRangeSpliterator<T, D> implements Spliterator<T> {
 
     @Override
     public int characteristics() {
-        return SIZED | SUBSIZED | CONCURRENT | DISTINCT | IMMUTABLE | ORDERED | SORTED;
+        return IMMUTABLE | NONNULL | ORDERED | SORTED | DISTINCT | SIZED | SUBSIZED;
     }
 
     @Override
     public Comparator<? super T> getComparator() {
         return domain;
     }
-
 }

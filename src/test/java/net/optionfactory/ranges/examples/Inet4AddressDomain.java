@@ -8,6 +8,11 @@ import net.optionfactory.ranges.DiscreteDomain;
 public class Inet4AddressDomain implements DiscreteDomain<Inet4Address, Long> {
 
     @Override
+    public Long zero() {
+        return 0L;
+    }
+    
+    @Override
     public Optional<Inet4Address> next(Inet4Address element) {
         final long longElement = Integer.toUnsignedLong(element.hashCode());
         if (0xffffffff == longElement) {

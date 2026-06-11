@@ -8,5 +8,4 @@ public abstract class Ensure {
         }
         throw new IllegalArgumentException(String.format(format, params));
     }
-
 }

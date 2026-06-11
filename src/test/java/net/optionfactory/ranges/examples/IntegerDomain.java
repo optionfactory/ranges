@@ -6,8 +6,13 @@ import net.optionfactory.ranges.DiscreteDomain;
 public class IntegerDomain implements DiscreteDomain<Integer, Long> {
 
     @Override
+    public Long zero() {
+        return 0L;
+    }
+    
+    @Override
     public Optional<Integer> next(Integer element) {
-        return element.equals(Integer.MAX_VALUE) ? Optional.<Integer>empty() : Optional.of(element + 1);
+        return element.equals(Integer.MAX_VALUE) ? Optional.empty() : Optional.of(element + 1);
     }
     
     @Override

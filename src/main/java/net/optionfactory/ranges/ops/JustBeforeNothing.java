@@ -23,10 +23,9 @@ public class JustBeforeNothing<T> implements Comparator<Optional<T>> {
 
     @Override
     public boolean equals(Object rhs) {
-        if (rhs instanceof JustBeforeNothing == false) {
+        if (!(rhs instanceof JustBeforeNothing<?> other)) {
             return false;
         }
-        final JustBeforeNothing<T> other = (JustBeforeNothing<T>) rhs;
         return this.inner.equals(other.inner);
     }
 
@@ -42,5 +41,4 @@ public class JustBeforeNothing<T> implements Comparator<Optional<T>> {
         }
         return inner.compare(lhs.get(), rhs.get());
     }
-
 }

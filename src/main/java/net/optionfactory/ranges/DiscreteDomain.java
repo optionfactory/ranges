@@ -5,6 +5,8 @@ import java.util.Optional;
 
 public interface DiscreteDomain<T, DISTANCE_TYPE> extends Comparator<T> {
 
+    DISTANCE_TYPE zero();    
+    
     Optional<T> next(T element);
 
     T mid(T start, Optional<T> end);
@@ -14,5 +16,4 @@ public interface DiscreteDomain<T, DISTANCE_TYPE> extends Comparator<T> {
     DISTANCE_TYPE sumDistances(DISTANCE_TYPE a, DISTANCE_TYPE b);
     
     long distanceToLong(DISTANCE_TYPE d);
-    
 }

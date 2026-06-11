@@ -1,105 +1,187 @@
 package net.optionfactory.ranges.ops;
 
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
 import java.util.stream.Stream;
 import net.optionfactory.ranges.DenseRange;
+import net.optionfactory.ranges.EmptyRange;
 import net.optionfactory.ranges.Range;
-import net.optionfactory.ranges.Range.Endpoint;
 import net.optionfactory.ranges.SparseRange;
 import net.optionfactory.ranges.DiscreteDomain;
 
 public class RangeOps<T, D> {
 
     private final DiscreteDomain<T, D> domain;
-    public final DenseRange<T, D> empty;
+    private final JustBeforeNothing<T> endComparator;
+    public final Range<T, D> empty;
 
-    public RangeOps(DiscreteDomain<T, D> domain, T emptyValue) {
+    public RangeOps(DiscreteDomain<T, D> domain) {
         this.domain = domain;
-        this.empty = new DenseRange<>(domain, Endpoint.Include, emptyValue, Optional.of(emptyValue), Endpoint.Exclude);
-
+        this.endComparator = new JustBeforeNothing<>(domain);
+        this.empty = new EmptyRange<>(domain);
     }
 
     public Range<T, D> canonicalize(Stream<DenseRange<T, D>> wannaBeRange) {
-        final Iterator<DenseRange<T, D>> nonEmptyRanges = wannaBeRange
+        final var nonEmptyRanges = wannaBeRange
                 .sorted()
-                .filter(dr -> !dr.isEmpty())
                 .iterator();
 
         if (!nonEmptyRanges.hasNext()) {
             return empty;
         }
-        final List<DenseRange<T, D>> densified = new ArrayList<>();
-        DenseRange<T, D> current = nonEmptyRanges.next();
+        final var densified = new ArrayList<DenseRange<T, D>>();
+        var current = nonEmptyRanges.next();
+
         while (nonEmptyRanges.hasNext()) {
             final DenseRange<T, D> next = nonEmptyRanges.next();
-            final boolean canBeMerged = JustBeforeNothing.compare(domain, current.end(), Optional.of(next.begin())) == 0 || current.overlaps(next);
+            final boolean canBeMerged = endComparator.compare(current.end(), Optional.of(next.begin())) == 0 || current.overlaps(next);
             if (canBeMerged) {
-                final Optional<T> max = BinaryOperator.maxBy(new JustBeforeNothing<>(domain)).apply(current.end(), next.end());
-                current = new DenseRange<>(domain, Endpoint.Include, current.begin(), max, Endpoint.Exclude);
+                final Optional<T> max = BinaryOperator.maxBy(endComparator).apply(current.end(), next.end());
+                current = new DenseRange<>(domain, current.begin(), max);
             } else {
                 densified.add(current);
                 current = next;
             }
         }
         densified.add(current);
+
         if (densified.size() == 1) {
             return densified.get(0);
         }
         return new SparseRange<>(domain, densified);
     }
 
-    public Range<T, D> difference(Range<T, D> lhs, Range<T, D> rhs) {
-        List<DenseRange<T, D>> difference = lhs.densified();
-        for (DenseRange<T, D> r : rhs.densified()) {
-            difference = difference(difference, r);
-        }
-        return canonicalize(difference.stream());
-    }
-
-    private List<DenseRange<T, D>> difference(List<DenseRange<T, D>> lhss, DenseRange<T, D> rhs) {
-        final List<DenseRange<T, D>> difference = new ArrayList<>();
-        for (DenseRange<T, D> lhs : lhss) {
-            if (!lhs.overlaps(rhs)) {
-                difference.add(lhs);
-                continue;
-            }
-            if (domain.compare(lhs.begin(), rhs.begin()) < 0) {
-                difference.add(new DenseRange<>(domain, Endpoint.Include, lhs.begin(), Optional.of(rhs.begin()), Endpoint.Exclude));
-            }
-            if (JustBeforeNothing.compare(domain, lhs.end(), rhs.end()) > 0) {
-                difference.add(new DenseRange<>(domain, Endpoint.Include, rhs.end().get(), lhs.end(), Endpoint.Exclude));
-            }
-        }
-        return difference;
-    }
-
     public Range<T, D> intersection(Range<T, D> lhs, Range<T, D> rhs) {
-        final List<DenseRange<T, D>> intersection = new ArrayList<>();
-        for (DenseRange<T, D> l : lhs.densified()) {
-            for (DenseRange<T, D> r : rhs.densified()) {
-                if (!l.overlaps(r)) {
-                    continue;
-                }
-                final T greatestLowerBound = domain.compare(l.begin(), r.begin()) > 0 ? l.begin() : r.begin();
-                final Optional<T> smallestUpperBound = JustBeforeNothing.compare(domain, l.end(), r.end()) > 0 ? r.end() : l.end();
-                intersection.add(new DenseRange<>(
-                        domain,
-                        Endpoint.Include,
-                        greatestLowerBound,
-                        smallestUpperBound,
-                        Endpoint.Exclude
-                ));
+        final var left = lhs.densified();
+        final var right = rhs.densified();
+        final var intersection = new ArrayList<DenseRange<T, D>>();
+
+        int i = 0;
+        int j = 0;
+
+        while (i < left.size() && j < right.size()) {
+            var a = left.get(i);
+            var b = right.get(j);
+
+            T maxBegin = domain.compare(a.begin(), b.begin()) >= 0 ? a.begin() : b.begin();
+            var minEnd = endComparator.compare(a.end(), b.end()) <= 0 ? a.end() : b.end();
+
+            if (endComparator.compare(Optional.of(maxBegin), minEnd) < 0) {
+                intersection.add(new DenseRange<>(domain, maxBegin, minEnd));
+            }
+
+            if (endComparator.compare(a.end(), b.end()) < 0) {
+                i++;
+            } else {
+                j++;
             }
         }
         return canonicalize(intersection.stream());
     }
 
+    public Range<T, D> difference(Range<T, D> lhs, Range<T, D> rhs) {
+        final var left = lhs.densified();
+        final var right = rhs.densified();
+        final var difference = new ArrayList<DenseRange<T, D>>();
+
+        if (left.isEmpty()) {
+            return empty;
+        }
+
+        int i = 0;
+        int j = 0;
+        var currentA = left.get(0);
+
+        while (i < left.size() && j < right.size()) {
+            var b = right.get(j);
+
+            if (endComparator.compare(currentA.end(), Optional.of(b.begin())) <= 0) {
+                difference.add(currentA);
+                i++;
+                if (i < left.size()) {
+                    currentA = left.get(i);
+                }
+            } else if (endComparator.compare(b.end(), Optional.of(currentA.begin())) <= 0) {
+                j++;
+            } else {
+                if (domain.compare(currentA.begin(), b.begin()) < 0) {
+                    difference.add(new DenseRange<>(domain, currentA.begin(), Optional.of(b.begin())));
+                }
+
+                if (endComparator.compare(currentA.end(), b.end()) <= 0) {
+                    i++;
+                    if (i < left.size()) {
+                        currentA = left.get(i);
+                    }
+                } else {
+                    currentA = new DenseRange<>(domain, b.end().get(), currentA.end());
+                    j++;
+                }
+            }
+        }
+
+        if (i < left.size()) {
+            difference.add(currentA);
+            i++;
+            while (i < left.size()) {
+                difference.add(left.get(i));
+                i++;
+            }
+        }
+
+        return canonicalize(difference.stream());
+    }
+
     public Range<T, D> union(Range<T, D> lhs, Range<T, D> rhs) {
-        return canonicalize(Stream.concat(lhs.densified().stream(), rhs.densified().stream()));
+        final var left = lhs.densified();
+        final var right = rhs.densified();
+        final var densified = new ArrayList<DenseRange<T, D>>();
+
+        int i = 0;
+        int j = 0;
+        DenseRange<T, D> current = null;
+
+        while (i < left.size() || j < right.size()) {
+            DenseRange<T, D> next;
+
+            if (i < left.size() && j < right.size()) {
+                if (domain.compare(left.get(i).begin(), right.get(j).begin()) <= 0) {
+                    next = left.get(i++);
+                } else {
+                    next = right.get(j++);
+                }
+            } else if (i < left.size()) {
+                next = left.get(i++);
+            } else {
+                next = right.get(j++);
+            }
+
+            if (current == null) {
+                current = next;
+            } else {
+                var canBeMerged = endComparator.compare(current.end(), Optional.of(next.begin())) >= 0;
+                if (canBeMerged) {
+                    Optional<T> maxEnd = BinaryOperator.maxBy(endComparator).apply(current.end(), next.end());
+                    current = new DenseRange<>(domain, current.begin(), maxEnd);
+                } else {
+                    densified.add(current);
+                    current = next;
+                }
+            }
+        }
+
+        if (current != null) {
+            densified.add(current);
+        }
+
+        if (densified.isEmpty()) {
+            return empty;
+        }
+        if (densified.size() == 1) {
+            return densified.get(0);
+        }
+        return new SparseRange<>(domain, densified);
     }
 
     public Range<T, D> symmetricDifference(Range<T, D> lhs, Range<T, D> rhs) {

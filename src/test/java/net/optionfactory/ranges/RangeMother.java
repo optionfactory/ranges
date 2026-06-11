@@ -16,13 +16,18 @@ import net.optionfactory.ranges.examples.IntegerDomain;
 public class RangeMother {
 
     public static final DiscreteDomain<Integer, Long> domain = new IntegerDomain();
-
-    public static DenseRange<Integer, Long> r(int lower, int upper) {
-        return new DenseRange<>(domain, Endpoint.Include, lower, Optional.of(upper), Endpoint.Include);
+    public static final Ranges<Integer, Long> ranges = new Ranges<>(domain);
+    
+    public static Range<Integer, Long> r(int lower, int upper) {
+        return ranges.closed(lower, upper);
     }
 
-    public static DenseRange<Integer, Long> r(Endpoint left, int lower, int upper, Endpoint right) {
-        return new DenseRange<>(domain, left, lower, Optional.of(upper), right);
+    public static Range<Integer, Long> r(Endpoint left, int lower, int upper, Endpoint right) {
+        return ranges.of(left, lower, Optional.of(upper), right);
+    }
+    
+    public static EmptyRange<Integer, Long> empty() {
+        return new EmptyRange<>(domain);
     }
 
     public static Pair<Integer, Integer> p(int lower, int upper) {
@@ -38,12 +43,13 @@ public class RangeMother {
     }
 
     private static SparseRange<Integer, Long> sparse(Iterator<Pair<Integer, Integer>> pairs) {
-        final List<DenseRange<Integer, Long>> ranges = StreamSupport.stream(
+        final List<DenseRange<Integer, Long>> densified = StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(pairs, Spliterator.ORDERED),
                 false)
-                .map(pair -> new DenseRange<>(domain, Endpoint.Include, pair.first(), Optional.of(pair.second()), Endpoint.Include))
+                // Use the factory to resolve bounds, cast back to DenseRange since we know p() provides valid bounds
+                .map(pair -> (DenseRange<Integer, Long>) ranges.closed(pair.first(), pair.second()))
                 .collect(Collectors.toList());
-        return new SparseRange<Integer, Long>(domain, ranges);
+        return new SparseRange<Integer, Long>(domain, densified);
     }
 
     public static class Pair<T1, T2> {
@@ -74,10 +80,10 @@ public class RangeMother {
 
         @Override
         public boolean equals(Object rhs) {
-            if (rhs instanceof Pair == false) {
+            if (!(rhs instanceof Pair)) {
                 return false;
             }
-            final Pair<T1, T2> other = (Pair<T1, T2>) rhs;
+            final Pair<?, ?> other = (Pair<?, ?>) rhs;
             return Objects.equals(this.first, other.first)
                     && Objects.equals(this.second, other.second);
         }

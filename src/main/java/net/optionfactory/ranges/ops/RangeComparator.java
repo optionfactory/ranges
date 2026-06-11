@@ -4,7 +4,7 @@ import java.util.Comparator;
 import net.optionfactory.ranges.Range;
 
 /**
- * smallest lower bounds with greatest upper bounds ranges come first
+ * empty, then smallest lower bounds with greatest upper bounds ranges come first
  *
  * @param <T>
  * @author rferranti
@@ -19,9 +19,9 @@ public class RangeComparator<T, D> implements Comparator<Range<T, D>> {
 
     @Override
     public int compare(Range<T, D> lhs, Range<T, D> rhs) {
-        final int emptynessOrder = Boolean.compare(lhs.isEmpty(), rhs.isEmpty());
-        if (emptynessOrder != 0) {
-            return emptynessOrder;
+        final int emptinessOrder = Boolean.compare(rhs.isEmpty(), lhs.isEmpty());
+        if (emptinessOrder != 0) {
+            return emptinessOrder;
         }
         final int beginOrder = comparator.compare(lhs.begin(), rhs.begin());
         if (beginOrder != 0) {
@@ -32,10 +32,10 @@ public class RangeComparator<T, D> implements Comparator<Range<T, D>> {
 
     @Override
     public boolean equals(Object rhs) {
-        if (rhs instanceof RangeComparator == false) {
+        if (!(rhs instanceof RangeComparator)) {
             return false;
         }
-        final RangeComparator<T, D> other = (RangeComparator<T, D>) rhs;
+        final RangeComparator<?, ?> other = (RangeComparator<?, ?>) rhs;
         return this.comparator.equals(other.comparator);
     }
 

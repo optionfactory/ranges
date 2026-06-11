@@ -53,12 +53,11 @@ public class DenseRangeSpliterator<T, D> implements Spliterator<T> {
 
     @Override
     public int characteristics() {
-        return SIZED | SUBSIZED | CONCURRENT | DISTINCT | IMMUTABLE | ORDERED | SORTED;
+        return IMMUTABLE | NONNULL | ORDERED | SORTED | DISTINCT | SIZED | SUBSIZED;
     }
 
     @Override
     public Comparator<? super T> getComparator() {
         return domain;
     }
-
 }

@@ -24,9 +24,11 @@ public class RangeIterator<T, D> implements Iterator<T> {
 
     @Override
     public T next() {
+        if (!hasNext()) {
+            throw new java.util.NoSuchElementException();
+        }
         final T oldCurrent = current;
-        current = domain.next(current).get();
+        current = domain.next(current).orElseThrow(() -> new java.util.NoSuchElementException("Domain limit reached"));
         return oldCurrent;
     }
-
 }

@@ -7,6 +7,11 @@ import net.optionfactory.ranges.DiscreteDomain;
 public class BigIntegerDomain implements DiscreteDomain<BigInteger, BigInteger> {
 
     @Override
+    public BigInteger zero() {
+        return BigInteger.ZERO;
+    }
+
+    @Override
     public Optional<BigInteger> next(BigInteger element) {
         return Optional.of(element.add(BigInteger.ONE));
     }

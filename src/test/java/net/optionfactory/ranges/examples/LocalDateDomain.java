@@ -8,6 +8,11 @@ import net.optionfactory.ranges.DiscreteDomain;
 public class LocalDateDomain implements DiscreteDomain<LocalDate, Long> {
 
     @Override
+    public Long zero() {
+        return 0L;
+    }
+    
+    @Override
     public Optional<LocalDate> next(LocalDate element) {
         if(element.equals(LocalDate.MAX)){
             return Optional.empty();

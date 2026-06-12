@@ -15,11 +15,13 @@ public class Ranges<T, D> {
 
     private final DiscreteDomain<T, D> domain;
     private final RangeOps<T, D> ops;
+    private final BoundComparator<T> boundCmp;
 
     public Ranges(DiscreteDomain<T, D> domain) {
         Ensure.precondition(domain != null, "cannot create Ranges<T> with a null DiscreteDomain<T, D>");
         this.domain = domain;
         this.ops = new RangeOps<>(domain);
+        this.boundCmp = new BoundComparator<>(domain);
     }
 
     public Builder<T, D> builder() {
@@ -135,13 +137,11 @@ public class Ranges<T, D> {
     }
 
     private Range<T, D> resolve(Endpoint left, Bound<T> lower, Bound<T> upper, Endpoint right) {
-        Ensure.precondition(lower != null, "lower bound wrapper cannot be null");
-        Ensure.precondition(upper != null, "upper bound wrapper cannot be null");
-
+        Ensure.precondition(lower != null, "lower bound cannot be null");
+        Ensure.precondition(upper != null, "upper bound cannot be null");
         Ensure.precondition(lower instanceof Bound.Finite || left != Endpoint.Include, "Cannot create a left-inclusive range with an unbounded lower limit");
         Ensure.precondition(upper instanceof Bound.Finite || right != Endpoint.Include, "Cannot create a right-inclusive range with an unbounded upper limit");
-
-        Bound<T> begin;
+        final Bound<T> begin;
         if (lower instanceof Bound.Finite<T> f && left == Endpoint.Exclude) {
             begin = domain.next(f.value())
                     .map(v -> (Bound<T>) Bound.finite(v))
@@ -149,20 +149,17 @@ public class Ranges<T, D> {
         } else {
             begin = lower;
         }
-
-        Bound<T> end;
+        final Bound<T> end;
         if (upper instanceof Bound.Finite<T> f && right == Endpoint.Include) {
             end = domain.next(f.value())
                     .map(v -> (Bound<T>) Bound.finite(v))
-                    .orElseGet(Bound::posInf);
+                    .orElseGet(Bound::positiveInfinity);
         } else {
             end = upper;
         }
-
-        if (new BoundComparator<>(domain).compare(begin, end) >= 0) {
+        if (boundCmp.compare(begin, end) >= 0) {
             return empty();
         }
-
         return new DenseRange<>(domain, begin, end);
     }
 
@@ -191,23 +188,23 @@ public class Ranges<T, D> {
     }
 
     public Range<T, D> atLeast(T lower) {
-        return resolve(Endpoint.Include, Bound.finite(lower), Bound.posInf(), Endpoint.Exclude);
+        return resolve(Endpoint.Include, Bound.finite(lower), Bound.positiveInfinity(), Endpoint.Exclude);
     }
 
     public Range<T, D> greaterThan(T lower) {
-        return resolve(Endpoint.Exclude, Bound.finite(lower), Bound.posInf(), Endpoint.Exclude);
+        return resolve(Endpoint.Exclude, Bound.finite(lower), Bound.positiveInfinity(), Endpoint.Exclude);
     }
 
     public Range<T, D> atMost(T upper) {
-        return resolve(Endpoint.Exclude, Bound.negInf(), Bound.finite(upper), Endpoint.Include);
+        return resolve(Endpoint.Exclude, Bound.negativeInfinity(), Bound.finite(upper), Endpoint.Include);
     }
 
     public Range<T, D> lessThan(T upper) {
-        return resolve(Endpoint.Exclude, Bound.negInf(), Bound.finite(upper), Endpoint.Exclude);
+        return resolve(Endpoint.Exclude, Bound.negativeInfinity(), Bound.finite(upper), Endpoint.Exclude);
     }
 
     public Range<T, D> all() {
-        return resolve(Endpoint.Exclude, Bound.negInf(), Bound.posInf(), Endpoint.Exclude);
+        return resolve(Endpoint.Exclude, Bound.negativeInfinity(), Bound.positiveInfinity(), Endpoint.Exclude);
     }
 
     public Range<T, D> empty() {
@@ -259,11 +256,10 @@ public class Ranges<T, D> {
 
     public Range<T, D> intersect(Stream<Range<T, D>> ranges) {
         Ensure.precondition(ranges != null, "cannot intersect a null stream of ranges");
-        java.util.Iterator<Range<T, D>> it = ranges.iterator();
+        final var it = ranges.iterator();
         if (!it.hasNext()) {
             return empty();
         }
-
         Range<T, D> current = it.next();
         while (it.hasNext() && !current.isEmpty()) {
             current = ops.intersection(current, it.next());

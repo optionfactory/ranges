@@ -13,6 +13,10 @@ public class BoundComparator<T> implements Comparator<Bound<T>> {
 
     @Override
     public int compare(Bound<T> a, Bound<T> b) {
+        return compare(domainComparator, a, b);
+    }
+
+    public static <T> int compare(Comparator<T> domainComparator, Bound<T> a, Bound<T> b) {
         if (a.equals(b)) {
             return 0;
         }

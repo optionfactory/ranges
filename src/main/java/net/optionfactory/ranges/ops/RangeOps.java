@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import net.optionfactory.ranges.Bound;
 import net.optionfactory.ranges.DenseRange;
+import net.optionfactory.ranges.DiscreteDomain;
 import net.optionfactory.ranges.EmptyRange;
 import net.optionfactory.ranges.Range;
 import net.optionfactory.ranges.SparseRange;
-import net.optionfactory.ranges.DiscreteDomain;
 
 public class RangeOps<T, D> {
 
@@ -28,10 +28,7 @@ public class RangeOps<T, D> {
         if (rawRanges.size() == 1) {
             return rawRanges.get(0);
         }
-
-        // Sort by the lower bound using our universal BoundComparator
         rawRanges.sort((a, b) -> cmp.compare(a.begin(), b.begin()));
-        
         return canonicalizeSorted(rawRanges);
     }
 
@@ -52,8 +49,6 @@ public class RangeOps<T, D> {
 
         for (int i = 1; i < sortedRanges.size(); i++) {
             final DenseRange<T, D> next = sortedRanges.get(i);
-
-            // If current overlaps or touches next
             if (cmp.compare(current.end(), next.begin()) >= 0) {
                 Bound<T> maxEnd = cmp.compare(current.end(), next.end()) >= 0 ? current.end() : next.end();
                 current = new DenseRange<>(domain, current.begin(), maxEnd);
@@ -81,23 +76,17 @@ public class RangeOps<T, D> {
         while (i < left.size() && j < right.size()) {
             var a = left.get(i);
             var b = right.get(j);
-
             Bound<T> maxBegin = cmp.compare(a.begin(), b.begin()) >= 0 ? a.begin() : b.begin();
             Bound<T> minEnd = cmp.compare(a.end(), b.end()) <= 0 ? a.end() : b.end();
-
-            // If there's a valid overlap
             if (cmp.compare(maxBegin, minEnd) < 0) {
                 intersection.add(new DenseRange<>(domain, maxBegin, minEnd));
             }
-
-            // Move the pointer of the range that finishes first
             if (cmp.compare(a.end(), b.end()) < 0) {
                 i++;
             } else {
                 j++;
             }
         }
-        // Result is naturally sorted, skip the .sort() phase
         return canonicalizeSorted(intersection); 
     }
 
@@ -105,11 +94,9 @@ public class RangeOps<T, D> {
         final var left = lhs.densified();
         final var right = rhs.densified();
         final var difference = new ArrayList<DenseRange<T, D>>();
-
         if (left.isEmpty()) {
             return empty;
         }
-
         int i = 0;
         int j = 0;
         var currentA = left.get(0);
@@ -118,21 +105,17 @@ public class RangeOps<T, D> {
             var b = right.get(j);
 
             if (cmp.compare(currentA.end(), b.begin()) <= 0) {
-                // currentA is entirely before b
                 difference.add(currentA);
                 i++;
                 if (i < left.size()) {
                     currentA = left.get(i);
                 }
             } else if (cmp.compare(b.end(), currentA.begin()) <= 0) {
-                // b is entirely before currentA
                 j++;
             } else {
-                // They overlap
                 if (cmp.compare(currentA.begin(), b.begin()) < 0) {
                     difference.add(new DenseRange<>(domain, currentA.begin(), b.begin()));
                 }
-
                 if (cmp.compare(currentA.end(), b.end()) <= 0) {
                     i++;
                     if (i < left.size()) {
@@ -153,8 +136,6 @@ public class RangeOps<T, D> {
                 i++;
             }
         }
-
-        // Result is naturally sorted
         return canonicalizeSorted(difference);
     }
 

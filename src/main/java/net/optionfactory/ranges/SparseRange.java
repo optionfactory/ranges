@@ -40,7 +40,7 @@ public record SparseRange<T, D>(DiscreteDomain<T, D> domain, List<DenseRange<T, 
     @Override
     public int compareTo(Range<T, D> other) {
         Ensure.precondition(other != null, "Comparing (compareTo) a SparseRange<T>(%s) with null");
-        return new RangeComparator<T, D>(domain).compare(this, other);
+        return RangeComparator.compare(domain, this, other);
     }
 
     @Override

@@ -2,10 +2,10 @@ package net.optionfactory.ranges;
 
 public sealed interface Bound<T> permits Bound.Finite, Bound.PositiveInfinity, Bound.NegativeInfinity {
 
-    static final PositiveInfinity<?> POS_INF = new PositiveInfinity<>();
-    static final NegativeInfinity<?> NEG_INF = new NegativeInfinity<>();
+    static final PositiveInfinity<?> POSITIVE_INFINITY = new PositiveInfinity<>();
+    static final NegativeInfinity<?> NEGATIVE_INFINITY = new NegativeInfinity<>();
 
-    record Finite<T>(T value) implements Bound<T> {
+    public record Finite<T>(T value) implements Bound<T> {
 
         @Override
         public String toString() {
@@ -13,7 +13,7 @@ public sealed interface Bound<T> permits Bound.Finite, Bound.PositiveInfinity, B
         }
     }
 
-    record PositiveInfinity<T>() implements Bound<T> {
+    public record PositiveInfinity<T>() implements Bound<T> {
 
         @Override
         public String toString() {
@@ -21,7 +21,7 @@ public sealed interface Bound<T> permits Bound.Finite, Bound.PositiveInfinity, B
         }
     }
 
-    record NegativeInfinity<T>() implements Bound<T> {
+    public record NegativeInfinity<T>() implements Bound<T> {
 
         @Override
         public String toString() {
@@ -29,17 +29,17 @@ public sealed interface Bound<T> permits Bound.Finite, Bound.PositiveInfinity, B
         }
     }
 
-    static <T> Bound<T> finite(T value) {
+    public static <T> Bound<T> finite(T value) {
         return new Finite<>(value);
     }
 
     @SuppressWarnings("unchecked")
-    static <T> Bound<T> posInf() {
-        return (Bound<T>) POS_INF;
+    static <T> Bound<T> positiveInfinity() {
+        return (Bound<T>) POSITIVE_INFINITY;
     }
 
     @SuppressWarnings("unchecked")
-    static <T> Bound<T> negInf() {
-        return (Bound<T>) NEG_INF;
+    static <T> Bound<T> negativeInfinity() {
+        return (Bound<T>) NEGATIVE_INFINITY;
     }
 }

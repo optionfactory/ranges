@@ -50,7 +50,7 @@ public class DenseRangeTest {
 
     @Test
     public void canToStringOnUnboundedRange() {
-        final DenseRange<Integer, Long> unboundRange = new DenseRange<>(new IntegerDomain(), Bound.finite(0), Bound.posInf());
+        final DenseRange<Integer, Long> unboundRange = new DenseRange<>(new IntegerDomain(), Bound.finite(0), Bound.positiveInfinity());
         Assertions.assertEquals("[0-+∞)", unboundRange.toString());
     }
 
@@ -209,7 +209,7 @@ public class DenseRangeTest {
     @Test
     public void creatingWithNothingAsUpperValueAndIncludedUpperEndpointYieldsException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            ranges.of(Endpoint.Include, Bound.finite(10), Bound.posInf(), Endpoint.Include);
+            ranges.of(Endpoint.Include, Bound.finite(10), Bound.positiveInfinity(), Endpoint.Include);
         });
     }
 

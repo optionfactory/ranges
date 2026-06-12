@@ -1,8 +1,6 @@
 package net.optionfactory.ranges.iterators;
 
-import java.math.BigInteger;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Spliterator;
@@ -21,11 +19,11 @@ public class SparseRangeSpliterator<T, D> implements Spliterator<T> {
 
     @Override
     public boolean tryAdvance(final Consumer<? super T> action) {
-        for (final Iterator<Spliterator<T>> spliteratorIter = spliterators.iterator(); spliteratorIter.hasNext(); spliteratorIter.remove()) {
-            final Spliterator<T> spliterator = spliteratorIter.next();
-            if (spliterator.tryAdvance(action)) {
+        while (!spliterators.isEmpty()) {
+            if (spliterators.getFirst().tryAdvance(action)) {
                 return true;
             }
+            spliterators.removeFirst();
         }
         return false;
     }
@@ -39,8 +37,7 @@ public class SparseRangeSpliterator<T, D> implements Spliterator<T> {
         if (size == 1) {
             return spliterators.getFirst().trySplit();
         }
-        final int middle = spliterators.size() / 2;
-
+        final int middle = size / 2;
         final List<Spliterator<T>> prefix = spliterators.subList(0, middle);
         final LinkedList<Spliterator<T>> prefixCopy = new LinkedList<>(prefix);
         
@@ -53,14 +50,18 @@ public class SparseRangeSpliterator<T, D> implements Spliterator<T> {
 
     @Override
     public long estimateSize() {
-        return spliterators
-                .stream()
-                .map(Spliterator::estimateSize)
-                .map(BigInteger::valueOf)
-                .reduce(BigInteger::add)
-                .get()
-                .min(BigInteger.valueOf(Long.MAX_VALUE))
-                .longValue();
+        long total = 0;
+        for (Spliterator<T> spliterator : spliterators) {
+            long size = spliterator.estimateSize();
+            if (size == Long.MAX_VALUE) {
+                return Long.MAX_VALUE;
+            }
+            total += size;            
+            if (total < 0) {
+                return Long.MAX_VALUE;
+            }
+        }
+        return total;
     }
 
     @Override

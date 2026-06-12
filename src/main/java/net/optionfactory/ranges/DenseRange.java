@@ -40,7 +40,7 @@ public record DenseRange<T, D>(DiscreteDomain<T, D> domain, Bound<T> begin, Boun
     @Override
     public int compareTo(Range<T, D> other) {
         Ensure.precondition(other != null, "comparing (compareTo) a DenseRange<T> with null");
-        return new RangeComparator<T, D>(domain).compare(this, other);
+        return RangeComparator.compare(domain, this, other);
     }
 
     @Override
@@ -57,10 +57,7 @@ public record DenseRange<T, D>(DiscreteDomain<T, D> domain, Bound<T> begin, Boun
         if (!(other instanceof DenseRange)) {
             return other.overlaps(this);
         }
-
-        BoundComparator<T> cmp = new BoundComparator<>(domain);
-        return cmp.compare(this.begin, other.end()) < 0
-                && cmp.compare(other.begin(), this.end) < 0;
+        return BoundComparator.compare(domain, this.begin, other.end()) < 0 && BoundComparator.compare(domain, other.begin(), this.end) < 0;
     }
 
     @Override
@@ -93,8 +90,8 @@ public record DenseRange<T, D>(DiscreteDomain<T, D> domain, Bound<T> begin, Boun
         if (begin instanceof Bound.NegativeInfinity) {
             throw new UnsupportedOperationException("Cannot compute size of left-unbounded ranges using the current DiscreteDomain API.");
         }
-        T start = ((Bound.Finite<T>) begin).value();
-        Optional<T> endOpt = (end instanceof Bound.Finite<T> f)
+        final var start = ((Bound.Finite<T>) begin).value();
+        final Optional<T> endOpt = (end instanceof Bound.Finite<T> f)
                 ? Optional.of(f.value())
                 : Optional.empty();
 

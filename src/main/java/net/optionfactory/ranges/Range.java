@@ -1,7 +1,6 @@
 package net.optionfactory.ranges;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 public sealed interface Range<T, D> extends Iterable<T>, Comparable<Range<T, D>> permits DenseRange, SparseRange, EmptyRange {
@@ -14,9 +13,9 @@ public sealed interface Range<T, D> extends Iterable<T>, Comparable<Range<T, D>>
 
     boolean overlaps(Range<T, D> rhs);
 
-    T begin();
+    Bound<T> begin();
 
-    Optional<T> end();
+    Bound<T> end();
 
     List<DenseRange<T, D>> densified();
 

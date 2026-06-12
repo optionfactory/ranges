@@ -1,34 +1,43 @@
 package net.optionfactory.ranges.iterators;
 
 import java.util.Iterator;
-import java.util.Optional;
+import java.util.NoSuchElementException;
+import net.optionfactory.ranges.Bound;
 import net.optionfactory.ranges.DiscreteDomain;
-import net.optionfactory.ranges.ops.JustBeforeNothing;
+import net.optionfactory.ranges.ops.BoundComparator;
+import net.optionfactory.ranges.ops.Ensure;
 
 public class RangeIterator<T, D> implements Iterator<T> {
 
     private final DiscreteDomain<T, D> domain;
-    private T current;
-    private final Optional<T> end;
+    private final BoundComparator<T> cmp;
+    private Bound<T> current;
+    private final Bound<T> end;
 
-    public RangeIterator(DiscreteDomain<T, D> domain, T begin, Optional<T> end) {
+    public RangeIterator(DiscreteDomain<T, D> domain, Bound<T> begin, Bound<T> end) {
+        Ensure.precondition(!(begin instanceof Bound.NegativeInfinity), "Cannot iterate a range with an unbounded lower limit");
+
         this.domain = domain;
+        this.cmp = new BoundComparator<>(domain);
         this.current = begin;
         this.end = end;
     }
 
     @Override
     public boolean hasNext() {
-        return JustBeforeNothing.compare(domain, Optional.of(current), end) < 0;
+        return cmp.compare(current, end) < 0;
     }
 
     @Override
     public T next() {
         if (!hasNext()) {
-            throw new java.util.NoSuchElementException();
+            throw new NoSuchElementException();
         }
-        final T oldCurrent = current;
-        current = domain.next(current).orElseThrow(() -> new java.util.NoSuchElementException("Domain limit reached"));
-        return oldCurrent;
+        final T yielded = ((Bound.Finite<T>) current).value();
+        this.current = domain.next(yielded)
+                .map(v -> (Bound<T>) Bound.finite(v))
+                .orElseGet(Bound::posInf);
+
+        return yielded;
     }
 }

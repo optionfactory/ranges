@@ -17,8 +17,8 @@ public class BigIntegerDomain implements DiscreteDomain<BigInteger, BigInteger> 
     }
 
     @Override
-    public BigInteger mid(BigInteger start, Optional<BigInteger> end) {
-        return end.get().add(start).divide(BigInteger.valueOf(2));
+    public BigInteger mid(BigInteger start, long distance) {
+        return start.add(BigInteger.valueOf(distance));
     }
     
     @Override
@@ -50,6 +50,4 @@ public class BigIntegerDomain implements DiscreteDomain<BigInteger, BigInteger> 
     public int hashCode() {
         return BigIntegerDomain.class.hashCode();
     }
-
-
 }

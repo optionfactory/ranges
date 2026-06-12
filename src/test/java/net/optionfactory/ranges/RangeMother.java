@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
@@ -17,15 +16,15 @@ public class RangeMother {
 
     public static final DiscreteDomain<Integer, Long> domain = new IntegerDomain();
     public static final Ranges<Integer, Long> ranges = new Ranges<>(domain);
-    
+
     public static Range<Integer, Long> r(int lower, int upper) {
         return ranges.closed(lower, upper);
     }
 
     public static Range<Integer, Long> r(Endpoint left, int lower, int upper, Endpoint right) {
-        return ranges.of(left, lower, Optional.of(upper), right);
+        return ranges.of(left, Bound.finite(lower), Bound.finite(upper), right);
     }
-    
+
     public static EmptyRange<Integer, Long> empty() {
         return new EmptyRange<>(domain);
     }

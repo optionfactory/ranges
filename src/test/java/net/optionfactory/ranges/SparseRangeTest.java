@@ -105,7 +105,7 @@ public class SparseRangeTest {
                 (DenseRange<Integer, Long>) RangeMother.r(0, 1), 
                 (DenseRange<Integer, Long>) RangeMother.r(2, 3)
         ));
-        Assertions.assertEquals(Integer.valueOf(0), range.begin());
+        Assertions.assertEquals(Bound.finite(0), range.begin());
     }
 
     @Test
@@ -114,8 +114,7 @@ public class SparseRangeTest {
                 (DenseRange<Integer, Long>) RangeMother.r(0, 1), 
                 (DenseRange<Integer, Long>) RangeMother.r(2, 3)
         ));
-        // The factory transforms closed bounds [2, 3] into the interval [2, 4).
-        Assertions.assertEquals(Optional.of(Integer.valueOf(4)), range.end());
+        Assertions.assertEquals(Bound.finite(4), range.end());
     }
 
     @Test

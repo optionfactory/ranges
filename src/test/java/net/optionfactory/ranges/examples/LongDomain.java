@@ -16,8 +16,8 @@ public class LongDomain implements DiscreteDomain<Long, Long> {
     }
 
     @Override
-    public Long mid(Long start, Optional<Long> end) {
-        return end.orElse(Long.MAX_VALUE) / 2 + start / 2;
+    public Long mid(Long start, long distance) {
+        return start + distance;
     }
 
     @Override

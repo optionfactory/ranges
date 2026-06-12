@@ -122,8 +122,8 @@ public class RangeOpsTest {
 
     @Test
     public void canMergeSameEmptyRanges() {
-        final Range<Integer, Long> a = RangeMother.ranges.closedOpen(0, Optional.of(0));
-        final Range<Integer, Long> b = RangeMother.ranges.closedOpen(0, Optional.of(0));
+        final Range<Integer, Long> a = RangeMother.ranges.closedOpen(0, 0);
+        final Range<Integer, Long> b = RangeMother.ranges.closedOpen(0, 0);
         // We pass empty stream since they resolve directly to EmptyRange, preventing DenseRange casting
         final Range<Integer, Long> got = ops.canonicalize(List.of());
         Assertions.assertEquals(Long.valueOf(0), got.size());
@@ -131,8 +131,8 @@ public class RangeOpsTest {
 
     @Test
     public void canMergeDifferentEmptyRanges() {
-        final Range<Integer, Long> a = RangeMother.ranges.closedOpen(0, Optional.of(0));
-        final Range<Integer, Long> b = RangeMother.ranges.closedOpen(1, Optional.of(1));
+        final Range<Integer, Long> a = RangeMother.ranges.closedOpen(0, 0);
+        final Range<Integer, Long> b = RangeMother.ranges.closedOpen(1, 1);
         final Range<Integer, Long> got = ops.canonicalize(List.of());
         Assertions.assertEquals(Long.valueOf(0), got.size());
     }
@@ -149,10 +149,10 @@ public class RangeOpsTest {
     @Test
     public void densifiesRangesOnCreation() {
         final Range<Integer, Long> got = ops.canonicalize(Arrays.asList(
-                (DenseRange<Integer, Long>) RangeMother.ranges.closedOpen(0, Optional.of(5)),
-                (DenseRange<Integer, Long>) RangeMother.ranges.closedOpen(5, Optional.of(10)))
+                (DenseRange<Integer, Long>) RangeMother.ranges.closedOpen(0, 5),
+                (DenseRange<Integer, Long>) RangeMother.ranges.closedOpen(5, 10))
         );
-        Assertions.assertEquals(RangeMother.ranges.closedOpen(0, Optional.of(10)), got);
+        Assertions.assertEquals(RangeMother.ranges.closedOpen(0, 10), got);
     }
 
     @Test

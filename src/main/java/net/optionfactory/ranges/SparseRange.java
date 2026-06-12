@@ -3,7 +3,6 @@ package net.optionfactory.ranges;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,12 +28,12 @@ public record SparseRange<T, D>(DiscreteDomain<T, D> domain, List<DenseRange<T, 
     }
 
     @Override
-    public T begin() {
+    public Bound<T> begin() {
         return densified.get(0).begin();
     }
 
     @Override
-    public Optional<T> end() {
+    public Bound<T> end() {
         return densified.get(densified.size() - 1).end();
     }
 
@@ -75,7 +74,10 @@ public record SparseRange<T, D>(DiscreteDomain<T, D> domain, List<DenseRange<T, 
 
     @Override
     public D size() {
-        return densified.stream().map(DenseRange::size).reduce(domain::sumDistances).get();
+        return densified.stream()
+                .map(DenseRange::size)
+                .reduce(domain::sumDistances)
+                .orElse(domain.zero());
     }
 
     @Override

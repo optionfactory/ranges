@@ -16,21 +16,21 @@ public class IntegerDomain implements DiscreteDomain<Integer, Long> {
     }
     
     @Override
-    public Integer mid(Integer start, Optional<Integer> end) {
-        return start/2 + end.orElse(Integer.MAX_VALUE)/2;
+    public Integer mid(Integer start, long distance) {
+        return (int) (start + distance);
     }
     
     @Override
     public Long distance(Integer start, Optional<Integer> end) {
-        if(end.isPresent()){
-            return (long)end.get() - start;
+        if (end.isPresent()) {
+            return (long) end.get() - start;
         }
-        return (long)Integer.MAX_VALUE - start;
+        return (long) Integer.MAX_VALUE - start;
     }    
 
     @Override
     public Long sumDistances(Long a, Long b) {
-        return a+b;
+        return a + b;
     }
 
     @Override
@@ -42,12 +42,6 @@ public class IntegerDomain implements DiscreteDomain<Integer, Long> {
     public long distanceToLong(Long d) {
         return d;
     }
-    
-
-    
-    
-    
-    
     
     @Override
     public int hashCode() {

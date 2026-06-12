@@ -9,22 +9,32 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.optionfactory.ranges.iterators.DenseRangeSpliterator;
 import net.optionfactory.ranges.iterators.RangeIterator;
+import net.optionfactory.ranges.ops.BoundComparator;
 import net.optionfactory.ranges.ops.Ensure;
-import net.optionfactory.ranges.ops.JustBeforeNothing;
 import net.optionfactory.ranges.ops.RangeComparator;
 
-public record DenseRange<T, D>(DiscreteDomain<T, D> domain, T begin, Optional<T> end) implements Range<T, D> {
+public record DenseRange<T, D>(DiscreteDomain<T, D> domain, Bound<T> begin, Bound<T> end) implements Range<T, D> {
 
     public DenseRange {
         Ensure.precondition(domain != null, "trying to create a DenseRange<T> with a null DiscreteDomain<T>");
-        Ensure.precondition(begin != null, "trying to create a DenseRange<T> with null lower bound");
-        Ensure.precondition(end != null, "trying to create a DenseRange<T> with null upper bound");
-        Ensure.precondition(JustBeforeNothing.compare(domain, Optional.of(begin), end) < 0, "DenseRange size must be > 0");
+        Ensure.precondition(begin != null, "trying to create a DenseRange<T> with null lower bound wrapper");
+        Ensure.precondition(end != null, "trying to create a DenseRange<T> with null upper bound wrapper");
+        Ensure.precondition(new BoundComparator<>(domain).compare(begin, end) < 0, "DenseRange size must be > 0");
     }
 
     @Override
     public boolean contains(T element) {
-        return domain.compare(element, begin) >= 0 && JustBeforeNothing.compare(domain, Optional.of(element), end) < 0;
+        if (begin instanceof Bound.Finite<T> f) {
+            if (domain.compare(element, f.value()) < 0) {
+                return false;
+            }
+        }
+        if (end instanceof Bound.Finite<T> f) {
+            if (domain.compare(element, f.value()) >= 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -35,7 +45,7 @@ public record DenseRange<T, D>(DiscreteDomain<T, D> domain, T begin, Optional<T>
 
     @Override
     public String toString() {
-        return String.format("[%s-%s)", begin, end.map(Object::toString).orElse("..."));
+        return String.format("[%s-%s)", begin, end);
     }
 
     @Override
@@ -47,8 +57,10 @@ public record DenseRange<T, D>(DiscreteDomain<T, D> domain, T begin, Optional<T>
         if (!(other instanceof DenseRange)) {
             return other.overlaps(this);
         }
-        return JustBeforeNothing.compare(domain, Optional.of(this.begin()), other.end()) < 0
-                && JustBeforeNothing.compare(domain, Optional.of(other.begin()), this.end()) < 0;
+
+        BoundComparator<T> cmp = new BoundComparator<>(domain);
+        return cmp.compare(this.begin, other.end()) < 0
+                && cmp.compare(other.begin(), this.end) < 0;
     }
 
     @Override
@@ -78,7 +90,15 @@ public record DenseRange<T, D>(DiscreteDomain<T, D> domain, T begin, Optional<T>
 
     @Override
     public D size() {
-        return domain.distance(begin, end);
+        if (begin instanceof Bound.NegativeInfinity) {
+            throw new UnsupportedOperationException("Cannot compute size of left-unbounded ranges using the current DiscreteDomain API.");
+        }
+        T start = ((Bound.Finite<T>) begin).value();
+        Optional<T> endOpt = (end instanceof Bound.Finite<T> f)
+                ? Optional.of(f.value())
+                : Optional.empty();
+
+        return domain.distance(start, endOpt);
     }
 
     @Override

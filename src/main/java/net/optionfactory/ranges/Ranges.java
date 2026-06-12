@@ -3,13 +3,12 @@ package net.optionfactory.ranges;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.optionfactory.ranges.Range.Endpoint;
+import net.optionfactory.ranges.ops.BoundComparator;
 import net.optionfactory.ranges.ops.Ensure;
-import net.optionfactory.ranges.ops.JustBeforeNothing;
 import net.optionfactory.ranges.ops.RangeOps;
 
 public class Ranges<T, D> {
@@ -73,7 +72,7 @@ public class Ranges<T, D> {
             return this;
         }
 
-        public Builder<T, D> add(Endpoint left, T lower, Optional<T> upper, Endpoint right) {
+        public Builder<T, D> add(Endpoint left, Bound<T> lower, Bound<T> upper, Endpoint right) {
             return add(ranges.of(left, lower, upper, right));
         }
 
@@ -81,7 +80,7 @@ public class Ranges<T, D> {
             return add(ranges.closed(lower, upper));
         }
 
-        public Builder<T, D> addClosedOpen(T lower, Optional<T> upper) {
+        public Builder<T, D> addClosedOpen(T lower, T upper) {
             return add(ranges.closedOpen(lower, upper));
         }
 
@@ -105,6 +104,18 @@ public class Ranges<T, D> {
             return add(ranges.greaterThan(lower));
         }
 
+        public Builder<T, D> addAtMost(T upper) {
+            return add(ranges.atMost(upper));
+        }
+
+        public Builder<T, D> addLessThan(T upper) {
+            return add(ranges.lessThan(upper));
+        }
+
+        public Builder<T, D> addAllDomain() {
+            return add(ranges.all());
+        }
+
         public Range<T, D> build() {
             return ops.canonicalize(components);
         }
@@ -123,50 +134,80 @@ public class Ranges<T, D> {
         return ops.canonicalize(list);
     }
 
-    private Range<T, D> resolve(Endpoint left, T lower, Optional<T> upper, Endpoint right) {
-        Ensure.precondition(lower != null, "lower bound value cannot be null");
+    private Range<T, D> resolve(Endpoint left, Bound<T> lower, Bound<T> upper, Endpoint right) {
+        Ensure.precondition(lower != null, "lower bound wrapper cannot be null");
         Ensure.precondition(upper != null, "upper bound wrapper cannot be null");
-        Ensure.precondition(upper.isPresent() || right != Endpoint.Include, "cannot create a right inclusive range with right bound set as Optional.empty");
 
-        T begin = left == Endpoint.Include ? lower : domain.next(lower).orElseThrow(() -> new IllegalArgumentException("Lower bound exceeds domain limits"));
-        Optional<T> end = upper.isPresent() && right == Endpoint.Include ? domain.next(upper.get()) : upper;
+        Ensure.precondition(lower instanceof Bound.Finite || left != Endpoint.Include, "Cannot create a left-inclusive range with an unbounded lower limit");
+        Ensure.precondition(upper instanceof Bound.Finite || right != Endpoint.Include, "Cannot create a right-inclusive range with an unbounded upper limit");
 
-        if (JustBeforeNothing.compare(domain, Optional.of(begin), end) >= 0) {
+        Bound<T> begin;
+        if (lower instanceof Bound.Finite<T> f && left == Endpoint.Exclude) {
+            begin = domain.next(f.value())
+                    .map(v -> (Bound<T>) Bound.finite(v))
+                    .orElseThrow(() -> new IllegalArgumentException("Lower bound exceeds domain limits"));
+        } else {
+            begin = lower;
+        }
+
+        Bound<T> end;
+        if (upper instanceof Bound.Finite<T> f && right == Endpoint.Include) {
+            end = domain.next(f.value())
+                    .map(v -> (Bound<T>) Bound.finite(v))
+                    .orElseGet(Bound::posInf);
+        } else {
+            end = upper;
+        }
+
+        if (new BoundComparator<>(domain).compare(begin, end) >= 0) {
             return empty();
         }
+
         return new DenseRange<>(domain, begin, end);
     }
 
-    public Range<T, D> of(Endpoint left, T lower, Optional<T> upper, Endpoint right) {
+    public Range<T, D> of(Endpoint left, Bound<T> lower, Bound<T> upper, Endpoint right) {
         return resolve(left, lower, upper, right);
     }
 
-    public Range<T, D> closedOpen(T lower, Optional<T> upper) {
-        return resolve(Endpoint.Include, lower, upper, Endpoint.Exclude);
+    public Range<T, D> closedOpen(T lower, T upper) {
+        return resolve(Endpoint.Include, Bound.finite(lower), Bound.finite(upper), Endpoint.Exclude);
     }
 
     public Range<T, D> openClosed(T lower, T upper) {
-        return resolve(Endpoint.Exclude, lower, Optional.of(upper), Endpoint.Include);
+        return resolve(Endpoint.Exclude, Bound.finite(lower), Bound.finite(upper), Endpoint.Include);
     }
 
     public Range<T, D> open(T lower, T upper) {
-        return resolve(Endpoint.Exclude, lower, Optional.of(upper), Endpoint.Exclude);
+        return resolve(Endpoint.Exclude, Bound.finite(lower), Bound.finite(upper), Endpoint.Exclude);
     }
 
     public Range<T, D> closed(T lower, T upper) {
-        return resolve(Endpoint.Include, lower, Optional.of(upper), Endpoint.Include);
+        return resolve(Endpoint.Include, Bound.finite(lower), Bound.finite(upper), Endpoint.Include);
     }
 
     public Range<T, D> singleton(T value) {
-        return resolve(Endpoint.Include, value, Optional.of(value), Endpoint.Include);
+        return resolve(Endpoint.Include, Bound.finite(value), Bound.finite(value), Endpoint.Include);
     }
 
     public Range<T, D> atLeast(T lower) {
-        return resolve(Endpoint.Include, lower, Optional.empty(), Endpoint.Exclude);
+        return resolve(Endpoint.Include, Bound.finite(lower), Bound.posInf(), Endpoint.Exclude);
     }
 
     public Range<T, D> greaterThan(T lower) {
-        return resolve(Endpoint.Exclude, lower, Optional.empty(), Endpoint.Exclude);
+        return resolve(Endpoint.Exclude, Bound.finite(lower), Bound.posInf(), Endpoint.Exclude);
+    }
+
+    public Range<T, D> atMost(T upper) {
+        return resolve(Endpoint.Exclude, Bound.negInf(), Bound.finite(upper), Endpoint.Include);
+    }
+
+    public Range<T, D> lessThan(T upper) {
+        return resolve(Endpoint.Exclude, Bound.negInf(), Bound.finite(upper), Endpoint.Exclude);
+    }
+
+    public Range<T, D> all() {
+        return resolve(Endpoint.Exclude, Bound.negInf(), Bound.posInf(), Endpoint.Exclude);
     }
 
     public Range<T, D> empty() {
@@ -286,5 +327,4 @@ public class Ranges<T, D> {
                 Builder::build
         );
     }
-
 }

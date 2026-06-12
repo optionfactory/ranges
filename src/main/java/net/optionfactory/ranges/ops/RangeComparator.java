@@ -4,17 +4,17 @@ import java.util.Comparator;
 import net.optionfactory.ranges.Range;
 
 /**
- * empty, then smallest lower bounds with greatest upper bounds ranges come first
- *
- * @param <T>
- * @author rferranti
+ * empty, then smallest lower bounds with greatest upper bounds ranges come
+ * first
  */
 public class RangeComparator<T, D> implements Comparator<Range<T, D>> {
 
-    private final Comparator<T> comparator;
+    private final Comparator<T> domainComparator;
+    private final BoundComparator<T> boundCmp;
 
-    public RangeComparator(Comparator<T> comparator) {
-        this.comparator = comparator;
+    public RangeComparator(Comparator<T> domainComparator) {
+        this.domainComparator = domainComparator;
+        this.boundCmp = new BoundComparator<>(domainComparator);
     }
 
     @Override
@@ -23,11 +23,16 @@ public class RangeComparator<T, D> implements Comparator<Range<T, D>> {
         if (emptinessOrder != 0) {
             return emptinessOrder;
         }
-        final int beginOrder = comparator.compare(lhs.begin(), rhs.begin());
+
+        if (lhs.isEmpty()) {
+            return 0;
+        }
+
+        final int beginOrder = boundCmp.compare(lhs.begin(), rhs.begin());
         if (beginOrder != 0) {
             return beginOrder;
         }
-        return JustBeforeNothing.compare(comparator, rhs.end(), lhs.end());
+        return boundCmp.compare(rhs.end(), lhs.end());
     }
 
     @Override
@@ -36,11 +41,11 @@ public class RangeComparator<T, D> implements Comparator<Range<T, D>> {
             return false;
         }
         final RangeComparator<?, ?> other = (RangeComparator<?, ?>) rhs;
-        return this.comparator.equals(other.comparator);
+        return this.domainComparator.equals(other.domainComparator);
     }
 
     @Override
     public int hashCode() {
-        return comparator.hashCode();
+        return domainComparator.hashCode();
     }
 }

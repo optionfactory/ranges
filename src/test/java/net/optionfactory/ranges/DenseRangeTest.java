@@ -1,7 +1,6 @@
 package net.optionfactory.ranges;
 
 import java.util.Arrays;
-import java.util.Optional;
 import net.optionfactory.ranges.Range.Endpoint;
 import net.optionfactory.ranges.examples.IntegerDomain;
 import net.optionfactory.ranges.ops.RangeOps;
@@ -10,16 +9,16 @@ import org.junit.jupiter.api.Test;
 
 public class DenseRangeTest {
 
-    private final Ranges<Integer, Long> factory = new Ranges<>(new IntegerDomain());
+    private final Ranges<Integer, Long> ranges = new Ranges<>(new IntegerDomain());
 
     @Test
     public void emptyRangeHasZeroSize() {
-        Assertions.assertEquals(Long.valueOf(0), factory.empty().size());
+        Assertions.assertEquals(Long.valueOf(0), ranges.empty().size());
     }
 
     @Test
     public void emptyRangeIsEmpty() {
-        Assertions.assertTrue(factory.empty().isEmpty());
+        Assertions.assertTrue(ranges.empty().isEmpty());
     }
 
     @Test
@@ -29,18 +28,18 @@ public class DenseRangeTest {
 
     @Test
     public void emptyRangesHaveSameHashcode() {
-        final Range<Integer, Long> anEmptyRange = factory.closedOpen(10, Optional.of(10));
-        final Range<Integer, Long> anotherEmptyRange = factory.closedOpen(0, Optional.of(0));
-        
+        final Range<Integer, Long> anEmptyRange = ranges.closedOpen(10, 10);
+        final Range<Integer, Long> anotherEmptyRange = ranges.closedOpen(0, 0);
+
         Assertions.assertFalse(anEmptyRange.iterator().hasNext());
         Assertions.assertEquals(anEmptyRange.hashCode(), anotherEmptyRange.hashCode());
     }
 
     @Test
     public void emptyRangesAreEquals() {
-        final Range<Integer, Long> anEmptyRange = factory.closedOpen(10, Optional.of(10));
-        final Range<Integer, Long> anotherEmptyRange = factory.closedOpen(0, Optional.of(0));
-        
+        final Range<Integer, Long> anEmptyRange = ranges.closedOpen(10, 10);
+        final Range<Integer, Long> anotherEmptyRange = ranges.closedOpen(0, 0);
+
         Assertions.assertEquals(anEmptyRange, anotherEmptyRange);
     }
 
@@ -51,8 +50,8 @@ public class DenseRangeTest {
 
     @Test
     public void canToStringOnUnboundedRange() {
-        final DenseRange<Integer, Long> unboundRange = new DenseRange<>(new IntegerDomain(), 0, Optional.empty());
-        Assertions.assertEquals("[0-...)", unboundRange.toString());
+        final DenseRange<Integer, Long> unboundRange = new DenseRange<>(new IntegerDomain(), Bound.finite(0), Bound.posInf());
+        Assertions.assertEquals("[0-+∞)", unboundRange.toString());
     }
 
     @Test
@@ -182,38 +181,38 @@ public class DenseRangeTest {
     @Test
     public void creatingDenseRangeWithNullSequencerYieldsException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new DenseRange<>(null, 0, Optional.of(1));
+            new DenseRange<>(null, Bound.finite(0), Bound.finite(1));
         });
     }
 
     @Test
     public void creatingDenseRangeWithNullLowerBoundYieldsException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new DenseRange<>(RangeMother.domain, null, Optional.of(1));
+            new DenseRange<>(RangeMother.domain, null, Bound.finite(1));
         });
     }
 
     @Test
     public void creatingDenseRangeWithNullUpperBoundYieldsException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new DenseRange<>(RangeMother.domain, 0, null);
+            new DenseRange<>(RangeMother.domain, Bound.finite(0), null);
         });
     }
 
     @Test
     public void creatingDenseRangeWithUpperBoundLesserThenLowerBoundYieldsException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new DenseRange<>(RangeMother.domain, 10, Optional.of(0));
+            new DenseRange<>(RangeMother.domain, Bound.finite(10), Bound.finite(0));
         });
     }
 
     @Test
     public void creatingWithNothingAsUpperValueAndIncludedUpperEndpointYieldsException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            factory.of(Endpoint.Include, 10, Optional.empty(), Endpoint.Include);
+            ranges.of(Endpoint.Include, Bound.finite(10), Bound.posInf(), Endpoint.Include);
         });
     }
-    
+
     @Test
     public void checkingForOverlapsWithNullYieldsException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {

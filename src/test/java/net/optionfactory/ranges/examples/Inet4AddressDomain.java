@@ -7,6 +7,8 @@ import net.optionfactory.ranges.DiscreteDomain;
 
 public class Inet4AddressDomain implements DiscreteDomain<Inet4Address, Long> {
 
+    private static final int MAX_IPV4_INT = 0xffffffff; 
+
     @Override
     public Long zero() {
         return 0L;
@@ -14,45 +16,40 @@ public class Inet4AddressDomain implements DiscreteDomain<Inet4Address, Long> {
     
     @Override
     public Optional<Inet4Address> next(Inet4Address element) {
-        final long longElement = Integer.toUnsignedLong(element.hashCode());
-        if (0xffffffff == longElement) {
+        final int value = toRawInt(element);
+        if (value == MAX_IPV4_INT) {
             return Optional.empty();
         }
-        return Optional.of(ipv4(longElement + 1));
+        return Optional.of(fromRawInt(value + 1));
     }
 
     @Override
-    public Inet4Address mid(Inet4Address start, Optional<Inet4Address> end) {
-        final long longStart = Integer.toUnsignedLong(start.hashCode());
-        final long longEnd = Integer.toUnsignedLong(end.map(Inet4Address::hashCode).orElse(0xffffffff));
-        return ipv4((longEnd + longStart) /2);
+    public Inet4Address mid(Inet4Address start, long distance) {
+        long targetAddress = Integer.toUnsignedLong(toRawInt(start)) + distance;
+        return fromRawInt((int) targetAddress);
     }
     
     @Override
     public Long distance(Inet4Address start, Optional<Inet4Address> end) {
-        final long longStart = Integer.toUnsignedLong(start.hashCode());
-        final long longEnd = Integer.toUnsignedLong(end.get().hashCode());
-        return longEnd - longStart;
+        final int intStart = toRawInt(start);
+        final int intEnd = end.map(Inet4AddressDomain::toRawInt).orElse(MAX_IPV4_INT);
+        return Integer.toUnsignedLong(intEnd) - Integer.toUnsignedLong(intStart);
     }
 
     @Override
     public Long sumDistances(Long a, Long b) {
-        return a+b;
+        return a + b;
     }
-
-    
 
     @Override
     public int compare(Inet4Address lhs, Inet4Address rhs) {
-        return Integer.compareUnsigned(lhs.hashCode(), rhs.hashCode());
+        return Integer.compareUnsigned(toRawInt(lhs), toRawInt(rhs));
     }
     
     @Override
     public long distanceToLong(Long d) {
         return d;
     }
-    
-    
 
     @Override
     public boolean equals(Object obj) {
@@ -64,17 +61,25 @@ public class Inet4AddressDomain implements DiscreteDomain<Inet4Address, Long> {
         return Inet4AddressDomain.class.hashCode();
     }
 
-    private static Inet4Address ipv4(long address) {
-        final byte[] octets = new byte[4];
-        for (int i = 0; i != octets.length; ++i) {
-            final int shiftBy = 24 - Byte.SIZE * i;
-            octets[i] = (byte) ((address >>> shiftBy) & 0xff);
-        }
+    private static int toRawInt(Inet4Address addr) {
+        byte[] bytes = addr.getAddress();
+        return ((bytes[0] & 0xFF) << 24) |
+               ((bytes[1] & 0xFF) << 16) |
+               ((bytes[2] & 0xFF) <<  8) |
+               (bytes[3] & 0xFF);
+    }
+
+    private static Inet4Address fromRawInt(int address) {
+        final byte[] octets = new byte[] {
+            (byte) ((address >>> 24) & 0xff),
+            (byte) ((address >>> 16) & 0xff),
+            (byte) ((address >>> 8)  & 0xff),
+            (byte) (address & 0xff)
+        };
         try {
             return (Inet4Address) Inet4Address.getByAddress(octets);
         } catch (UnknownHostException ex) {
-            throw new IllegalStateException("Never happens: UnknownHostException building a Inet4Address from octets", ex);
+            throw new IllegalStateException("Failed mapping raw bits back to Inet4Address", ex);
         }
     }
-
 }

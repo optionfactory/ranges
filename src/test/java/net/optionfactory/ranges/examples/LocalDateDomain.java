@@ -14,15 +14,15 @@ public class LocalDateDomain implements DiscreteDomain<LocalDate, Long> {
     
     @Override
     public Optional<LocalDate> next(LocalDate element) {
-        if(element.equals(LocalDate.MAX)){
+        if (element.equals(LocalDate.MAX)) {
             return Optional.empty();
         }
         return Optional.of(element.plus(1, ChronoUnit.DAYS));
     }
 
     @Override
-    public LocalDate mid(LocalDate start, Optional<LocalDate> end) {
-        return start.plus(distance(start, end) / 2, ChronoUnit.DAYS);
+    public LocalDate mid(LocalDate start, long distance) {
+        return start.plus(distance, ChronoUnit.DAYS);
     }
 
     @Override
@@ -32,7 +32,7 @@ public class LocalDateDomain implements DiscreteDomain<LocalDate, Long> {
 
     @Override
     public Long sumDistances(Long a, Long b) {
-        return a+b;
+        return a + b;
     }
 
     @Override
@@ -44,5 +44,4 @@ public class LocalDateDomain implements DiscreteDomain<LocalDate, Long> {
     public int compare(LocalDate o1, LocalDate o2) {
         return o1.compareTo(o2);
     }
-    
 }

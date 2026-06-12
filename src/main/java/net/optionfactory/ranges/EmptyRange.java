@@ -3,7 +3,6 @@ package net.optionfactory.ranges;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
@@ -21,13 +20,13 @@ public record EmptyRange<T, D>(DiscreteDomain<T, D> domain) implements Range<T, 
     }
 
     @Override
-    public T begin() {
+    public Bound<T> begin() {
         throw new IllegalStateException("An empty range does not have bounds.");
     }
 
     @Override
-    public Optional<T> end() {
-        return Optional.empty();
+    public Bound<T> end() {
+        throw new IllegalStateException("An empty range does not have bounds.");
     }
 
     @Override

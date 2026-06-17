@@ -5,7 +5,7 @@ build:
 	mvn clean package
 bump:
 	mvn versions:set -DgenerateBackupPoms=false
-deploy-central:
+publish-central:
 	mvn clean deploy -Pcentral
 
 check-updates:
